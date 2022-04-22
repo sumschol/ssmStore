@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:c="http://java.sun.com/jsp/jstl/core">
+<head>
+    <meta charset="UTF-8">
+  <link rel="stylesheet" th:href="@{/css/bootstrap.css}"/>
+  <link rel="stylesheet" th:href="@{/css/bright.css}"/>
+  <link rel="stylesheet" th:href="@{/css/addBook.css}"/>
+  <script type="text/javascript" th:src="@{/js/jquery-3.3.1.js}"></script>
+  <script type="text/javascript" th:src="@{/js/bootstrap.js}"></script>
+    <title>Title</title>
+
+  <script type="text/javascript">
+    function allClick() {
+      //取得全选复选框的选中未选 中状态
+      var ischeck = $("#all").prop("checked");
+      //将此状态赋值给每个商品列表里的复选框
+      $("input[name=ck]").each(function () {
+        this.checked = ischeck;
+      });
+    }
+
+    function ckClick() {
+      //取得所有name=ck的被选中的复选框
+      var length = $("input[name=ck]:checked").length;
+//取得所有name=ck的复选框
+      var len = $("input[name=ck]").length;
+      //比较
+      if (len == length) {
+        $("#all").prop("checked", true);
+      } else {
+        $("#all").prop("checked", false);
+      }
+    }
+
+    function mysubmit() {
+      $("#myform").submit();
+    }
+
+    //批量删除
+    function deleteBatch() {
+
+      //取得所有被选中删除商品的pid
+      var zhi=$("input[name=ck]:checked");
+      var str="";
+      var id="";
+      if(zhi.length==0){
+        alert("请选择将要删除的商品！");
+      }else{
+        // 有选中的商品，则取出每个选 中商品的ID，拼提交的ID的数据
+        if(confirm("您确定删除"+zhi.length+"条商品吗？")){
+          //拼接ID
+          $.each(zhi,function (index,item) {
+
+            id=$(item).val(); //22 33
+            alert(id);
+            if(id!=null)
+              str += id+",";  //22,33,44
+          });
+          alert(str+"11111111");
+          //发送请求到服务器端
+          // window.location="${pageContext.request.contextPath}/prod/deletebatch.action?str="+str;
+
+        }
+      }
+    }
+    //单个删除
+    function del(pId) {
+      if (confirm("确定删除吗")) {
+        //向服务器提交请求完成删除
+        $.ajax({
+          url:"/edit/del",
+          data:{"pId":pId},
+          type: "post",
+          success:function (data){
+            $("#table").html(data)
+          },
+          error:function (){
+            alert("删除失败")
+          }
+        });
+      }
+    }
+
+    function one(pid, ispage) {
+      location.href = "${pageContext.request.contextPath}/prod/one.action?pid=" + pid + "&page=" + ispage;
+    }
+
+    function ajaxsplit(page) {
+      //异步ajax分页请求
+      $.ajax({
+        // url:getContextPath()+"/product/ajaxsplit",
+        url:"/product/ajaxsplit",
+        data:{"page":page},
+        type:"post",
+        success:function (data) {
+          //重新加载分页显示的组件table
+          //location.href---->http://localhost:8080/admin/login.action
+          // $("#table").load(getContextPath()+"http://localhost:8080/admin/product.jsp #table");
+          $("#table").html(data)
+        },
+        error:function (){
+          window.alert("ajax err!")
+        }
+      })
+    };
+
+    function getContextPath() {
+      var pathName = document.location.pathname;
+      var index = pathName.substr(1).indexOf("/");
+      var result = pathName.substr(0,index+1);
+      return result;
+    }
+  </script>
+
+</head>
+<body>
+<div id="table">
+  <c:choose>
+    <div id="top">
+      <input type="checkbox" id="all" onclick="allClick()" style="margin-left: 50px">&nbsp;&nbsp;全选
+      <a th:href="@{/add}">
+
+        <input type="button" class="btn btn-warning" id="btn1"
+               value="添加">
+      </a>
+      <input type="button" class="btn btn-warning" id="btn1"
+             value="批量删除" onclick="deleteBatch()">
+    </div>
+    <!--显示分页后的商品-->
+    <div id="middle">
+      <table class="table table-bordered table-striped">
+        <tr>
+          <th></th>
+          <th>商品名</th>
+          <th>商品介绍</th>
+          <th>定价（元）</th>
+          <th>商品图片</th>
+          <th>商品数量</th>
+          <th>操作</th>
+        </tr>
+        <tr th:each="p : ${info.list}">
+          <td valign="center" align="center"><input type="checkbox" name="ck" id="ck"
+                                                    th:value="${p.pId}" onclick="ckClick()"></td>
+          <td th:text="${p.pName}"></td>
+          <td th:text="${p.pContent}"></td>
+          <td th:text="${p.pPrice}"></td>
+          <td><img width="55px" height="45px"
+                   th:src="@{'/image_big/'+${p.pImage}}"></td>
+          <td th:text="${p.pNumber}"></td>
+
+          <!--                            <td><a th:href="@{admin/product(flag='delete',pid=${p.pId})}"-->
+          <!--                                   onclick="return confirm('确定删除吗？')">删除</a>-->
+          <!--                                &nbsp;&nbsp;&nbsp;<a-->
+          <!--                                        th:href="@{/admin/product(flag='one',pid=${p.pId})}">修改</a>-->
+          <!--                            </td>-->
+          <td>
+            <button type="button" class="btn btn-info "
+                    th:href="@{/edit(pId=${p.pId},pageNum=${info.pageNum})}">编辑
+            </button>
+            <button type="button" class="btn btn-warning" id="mydel"
+                    th:onclick="del(${p.pId})">删除
+            </button>
+          </td>
+        </tr>
+      </table>
+      <!--分页栏-->
+      <div id="bottom">
+        <div>
+          <nav aria-label="..." style="text-align:center;">
+            <ul class="pagination">
+              <li>
+                <!--                                         <a-->
+                <!--                                            th:href="@{/prod/split(page=${info.prePage})}"-->
+                <!--                                            aria-label="Previous"/>-->
+                <a th:if="${info.prePage} != 0" th:href="'javascript:ajaxsplit('+${info.prePage}+')'" aria-label="Previous">
+                  <span aria-hidden="true">«</span></a>
+                <a th:unless="${info.prePage} != 0" style="background-color: #cccac8" aria-label="Previous">
+                  <span aria-hidden="true">«</span></a>
+                <!--                                        <a th:unless="${info.prePage} != 0" href="javascript:ajaxsplit(1)" aria-label="Previous">-->
+                <!--                                            <span aria-hidden="true">«</span></a>-->
+              </li>
+              <!--                                    <c:forEach begin="1" end="${info.pages}" var="i">-->
+              <!--                                        <li>${i}</li>-->
+              <!--                                        <c:if test="${info.pageNum==i}">-->
+              <!--                                            <li>-->
+              <!--                                                 <a-->
+              <!--                                                    href="${pageContext.request.contextPath}/prod/split.action?page=${i}"-->
+              <!--                                                    style="background-color: grey">${i}</a>-->
+              <!--                                                <a href="javascript:ajaxsplit(${i})"-->
+              <!--                                                   style="background-color: grey">${i}</a>-->
+              <!--                                            </li>-->
+              <!--                                        </c:if>-->
+              <!--                                        <c:if test="${info.pageNum!=i}">-->
+              <!--                                            <li>-->
+              <!--                                                 <a-->
+              <!--                                                    href="${pageContext.request.contextPath}/prod/split.action?page=${i}">${i}</a>-->
+              <!--                                                <a href="javascript:ajaxsplit(${i})">${i}</a>-->
+              <!--                                            </li>-->
+              <!--                                        </c:if>-->
+              <!--                                    </c:forEach>-->
+              <li th:each="i : ${pagesList}">
+                <!--                                        <a th:if="${i} == ${info.pageNum}">-->
+                <!--                                            <a style="background-color: grey" th:text="${i}" th:href="'javascript:ajaxsplit('+${i}+')'"/>-->
+                <!--                                        </a>-->
+                <!--                                        <a th:unless="${i} == ${info.pageNum}">-->
+                <!--                                            <a th:text="${i}" th:href="'javascript:ajaxsplit('+${i}+')'"/>-->
+                <!--                                        </a>-->
+
+                <a th:if="${i} == ${info.pageNum}" style="background-color: cornflowerblue" th:text="${i}" th:href="'javascript:ajaxsplit('+${i}+')'"></a>
+                <a th:unless="${i} == ${info.pageNum}" th:text="${i}" th:href="'javascript:ajaxsplit('+${i}+')'"></a>
+              </li>
+
+
+
+              <li>
+                <a th:if="${info.nextPage} != 0" th:href="'javascript:ajaxsplit('+${info.nextPage}+')'" aria-label="Next">
+                  <span aria-hidden="true">»</span></a>
+                <a th:unless="${info.nextPage} != 0" style="background-color: #cccac8" aria-label="Next">
+                  <span aria-hidden="true">»</span></a>
+
+              </li>
+              <li style=" margin-left:150px;color: #0e90d2;height: 35px; line-height: 35px;">&nbsp;&nbsp;&nbsp;<font
+                      style="color:orange;"></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <!--                                        <c:if test="${info.pageNum!=0}">-->
+                <!--                                            当前&nbsp;&nbsp;&nbsp;<font-->
+                <!--                                                style="color:orange;">${info.pageNum}</font>&nbsp;&nbsp;&nbsp;页&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+                <!--                                        </c:if>-->
+                <a th:text="'第 '+${info.pageNum}+' 页'"/>
+                <a th:text="'共  '+${info.pages}+'  页'"/>
+                <!--                                        <c:if test="${info.pageNum==0}">-->
+                <!--                                            当前&nbsp;&nbsp;&nbsp;<font-->
+                <!--                                                style="color:orange;">1</font>&nbsp;&nbsp;&nbsp;页&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+                <!--                                        </c:if>-->
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <a th:if="@{info.list} == null">
+      <div>
+        <h2 style="width:1200px; text-align: center;color: orangered;margin-top: 100px">暂时没有符合条件的商品！</h2>
+      </div>
+    </a>
+  </c:choose>
+</div>
+</body>
+</html>
